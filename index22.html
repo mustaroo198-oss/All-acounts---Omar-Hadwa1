@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All acounts - Omar Hadwa</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #0b0b0b;
+            --card-bg: #141414;
+            --accent-color: #d4af37; /* ذهبي فاخر */
+            --text-color: #ffffff;
+            --text-muted: #aaaaaa;
+            --border-color: #222222;
+            --danger-color: #ff4d4d;
+            --success-color: #2ecc71;
+            --bezier-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Cairo', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow-x: hidden;
+        }
+
+        /* أنيميشن الحركات الفاخرة */
+        @keyframes pageIn {
+            from { opacity: 0; transform: translateY(30px) scale(0.98); filter: blur(4px); }
+            to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+        }
+        @keyframes pageOut {
+            from { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+            to { opacity: 0; transform: translateY(-20px) scale(0.98); filter: blur(4px); }
+        }
+        @keyframes slideInRecord {
+            from { opacity: 0; transform: translateX(30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes popupIn {
+            from { opacity: 0; transform: scale(0.85); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes alertPulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 77, 77, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 77, 77, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 77, 77, 0); }
+        }
+
+        .page {
+            display: none;
+            max-width: 500px;
+            width: 90%;
+            margin: 40px auto;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+            position: relative;
+        }
+
+        .page.active {
+            display: block;
+            animation: pageIn 0.6s var(--bezier-bounce) forwards;
+        }
+
+        .main-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        .main-header h2 {
+            margin-bottom: 0;
+            flex-grow: 1;
+            text-align: center;
+            margin-right: -30px;
+        }
+
+        .settings-gear {
+            font-size: 24px;
+            cursor: pointer;
+            transition: transform 0.6s var(--bezier-bounce), color 0.3s;
+            color: var(--accent-color);
+            user-select: none;
+            padding: 5px;
+        }
+        .settings-gear:hover { transform: rotate(180deg) scale(1.15); color: #f1c40f; }
+
+        /* سهم العودة لصفحة الإعدادات الجديدة */
+        .back-arrow {
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--accent-color);
+            transition: transform 0.3s ease, color 0.3s;
+            user-select: none;
+            padding: 5px;
+        }
+        .back-arrow:hover { transform: scale(1.2) translateX(4px); color: #f1c40f; }
+
+        /* أزرار الإعدادات داخل صفحة الترس الكبرى */
+        .settings-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        .settings-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 18px;
+            background: #1c1c1c;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: white;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s var(--bezier-bounce);
+            text-align: right;
+            text-decoration: none;
+        }
+        .settings-item:hover {
+            border-color: var(--accent-color);
+            background: #222222;
+            transform: translateX(-5px);
+        }
+        .settings-item.game-item {
+            border-right: 4px solid #3498db;
+        }
+        .settings-item.game-item:hover {
+            background: rgba(52, 152, 219, 0.1);
+            border-color: #3498db;
+        }
+        .settings-item.empty-slot {
+            border-right: 4px solid #9b59b6;
+            opacity: 0.85;
+        }
+        .settings-item.empty-slot:hover {
+            background: rgba(155, 89, 182, 0.1);
+            border-color: #9b59b6;
+            opacity: 1;
+        }
+        .settings-item.danger-item {
+            border-right: 4px solid var(--danger-color);
+        }
+        .settings-item.danger-item:hover {
+            background: #2a0c0c;
+            border-color: var(--danger-color);
+        }
+
+        h2 { text-align: center; margin-bottom: 25px; color: var(--accent-color); font-weight: 700; }
+        .input-group { margin-bottom: 18px; }
+        label { display: block; margin-bottom: 8px; color: var(--text-muted); font-size: 14px; }
+        
+        input, select {
+            width: 100%;
+            padding: 12px;
+            background: #1c1c1c;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: white;
+            font-size: 16px;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 12px rgba(212, 175, 55, 0.3);
+            background: #222222;
+            transform: translateY(-2px);
+        }
+
+        /* بار التحذير للميزانية */
+        .budget-alert-box {
+            display: none;
+            background: rgba(255, 77, 77, 0.15);
+            border: 1px solid var(--danger-color);
+            color: #fff;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-bottom: 18px;
+            text-align: center;
+            font-weight: 600;
+            animation: alertPulse 2s infinite;
+        }
+
+        .type-selector { display: flex; gap: 15px; margin-bottom: 18px; }
+        .type-option {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: #1c1c1c;
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.4s var(--bezier-bounce);
+            user-select: none;
+        }
+        .type-option input { display: none; }
+        .type-option.income-box { border-right: 4px solid var(--success-color); }
+        .type-option.expense-box { border-right: 4px solid var(--danger-color); }
+        .type-option:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.4); }
+        .type-option.income-box.selected { background: rgba(46, 204, 113, 0.12); border-color: var(--success-color); transform: scale(1.03); }
+        .type-option.expense-box.selected { background: rgba(255, 77, 77, 0.12); border-color: var(--danger-color); transform: scale(1.03); }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: var(--accent-color);
+            color: black;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s var(--bezier-bounce);
+            margin-top: 10px;
+        }
+        button:hover { background: #f1c40f; transform: translateY(-3px) scale(1.01); box-shadow: 0 8px 20px rgba(212, 175, 55, 0.4); }
+
+        .secondary-btn { background: #1c1c1c; color: var(--accent-color); border: 1px solid var(--border-color); }
+        .secondary-btn:hover { background: #252525; color: #ffffff; border-color: #444; box-shadow: none; }
+
+        .switch-link { text-align: center; margin-top: 20px; font-size: 14px; color: var(--text-muted); cursor: pointer; transition: all 0.3s; }
+        .switch-link:hover { color: var(--accent-color); text-decoration: underline; letter-spacing: 0.5px; }
+
+        .total-box { background: #1c1c1c; border: 1px dashed var(--accent-color); padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 20px; transition: all 0.4s; }
+        .total-box span { display: block; font-size: 28px; font-weight: 700; color: var(--accent-color); }
+
+        .user-welcome { text-align: center; font-size: 14px; color: var(--text-muted); margin-bottom: 15px; }
+        
+        /* حاوية الرسم البياني داخل الـ Popup */
+        .chart-container { width: 100%; max-width: 220px; margin: 15px auto; }
+
+        /* شريط البحث والفلترة */
+        .search-filter-bar {
+            display: flex;
+            gap: 10px;
+            margin-top: 25px;
+            background: #111;
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+        }
+        .search-filter-bar input { padding: 8px 12px; font-size: 14px; flex: 2; }
+        .search-filter-bar select { padding: 8px 12px; font-size: 14px; flex: 1; }
+
+        /* الجدول وقائمة العمليات */
+        .history-container { margin-top: 15px; max-height: 230px; overflow-y: auto; padding-right: 3px; }
+        
+        .record-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: #1a1a1a;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+            animation: slideInRecord 0.4s var(--bezier-bounce) forwards;
+        }
+        .record-item:hover { background: #222; transform: translateX(-4px); }
+        .record-item.income-item { border-right: 4px solid var(--success-color); }
+        .record-item.expense-item { border-right: 4px solid var(--danger-color); }
+        .record-info div { font-size: 14px; }
+        .record-info .record-date { color: var(--text-muted); font-size: 12px; }
+        .record-category-badge { display: inline-block; padding: 2px 6px; background: #252525; border-radius: 4px; font-size: 11px; color: var(--accent-color); margin-right: 5px; }
+
+        .record-amount { font-weight: 700; display: flex; align-items: center; gap: 12px; }
+        .income-amount { color: var(--success-color); }
+        .expense-amount { color: var(--danger-color); }
+
+        .action-btns { display: flex; gap: 8px; }
+        .icon-btn { background: none; border: none; cursor: pointer; font-size: 14px; width: auto; padding: 0; transition: transform 0.2s var(--bezier-bounce); }
+        .icon-btn:hover { transform: scale(1.3); }
+
+        /* النوافذ المنبثقة الفخمة (Popups Overlay) */
+        .popup-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center;
+            backdrop-filter: blur(5px); transition: opacity 0.3s ease;
+        }
+        .popup-overlay.show { display: flex; }
+        .popup-card {
+            background: var(--card-bg); border: 1px solid var(--border-color); padding: 30px;
+            border-radius: 16px; width: 90%; max-width: 400px; text-align: center; position: relative;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.6); transform: scale(0.85);
+        }
+        .popup-overlay.show .popup-card { animation: popupIn 0.4s var(--bezier-bounce) forwards; }
+        .popup-card h3 { color: var(--accent-color); margin-bottom: 15px; }
+        .popup-card p { color: var(--text-muted); font-size: 14px; margin-bottom: 20px; }
+        .close-popup { position: absolute; top: 10px; left: 15px; font-size: 20px; color: var(--text-muted); cursor: pointer; }
+        .close-popup:hover { color: var(--danger-color); transform: scale(1.2); }
+
+        .contact-links { display: flex; flex-direction: column; gap: 10px; }
+        .contact-link-btn {
+            display: block; padding: 11px; background: #1c1c1c; border: 1px solid var(--border-color);
+            color: white; text-decoration: none; border-radius: 8px; font-weight: 600; transition: all 0.3s;
+        }
+        .contact-link-btn:hover { border-color: var(--accent-color); background: #252525; transform: scale(1.02); }
+
+        footer { text-align: center; padding: 20px; color: var(--text-muted); font-size: 14px; letter-spacing: 1px; }
+        footer span { color: var(--accent-color); font-weight: 600; }
+    </style>
+</head>
+<body>
+
+    <div id="loginPage" class="page active">
+        <h2>تسجيل الدخول</h2>
+        <div id="loginUserPart" class="auth-step">
+            <div class="input-group">
+                <label>اسم المستخدم</label>
+                <input type="text" id="loginUser" placeholder="أدخل اسم المستخدم" onkeypress="handleUserEnter(event)">
+            </div>
+            <button class="secondary-btn" onclick="showPasswordStep()">التالي: كـلمة المرور ⬅️</button>
+        </div>
+        <div id="loginPassPart" class="auth-step" style="display: none;">
+            <div class="input-group">
+                <label>كلمة المرور</label>
+                <input type="password" id="loginPass" placeholder="أدخل كلمة المرور" onkeypress="handlePassEnter(event)">
+            </div>
+            <button onclick="login()">دخول الحساب</button>
+            <button class="secondary-btn" style="font-size: 12px; padding: 6px;" onclick="goBackToUserStep()">⬅️ العودة لاسم المستخدم</button>
+        </div>
+        <div class="switch-link" onclick="goToRegister()">إنشاء حساب جديد؟</div>
+    </div>
+
+    <div id="registerPage" class="page">
+        <h2>إنشاء حساب جديد</h2>
+        <div class="input-group">
+            <label>اسم مستخدم جديد</label>
+            <input type="text" id="regUser" placeholder="اختر اسم مستخدم">
+        </div>
+        <div class="input-group">
+            <label>كلمة المرور</label>
+            <input type="password" id="regPass" placeholder="اختر كلمة مرور قوية">
+        </div>
+        <button onclick="register()">تسجيل الحساب</button>
+        <div class="switch-link" onclick="switchPage('registerPage', 'loginPage'); resetLoginSteps();">لديك حساب بالفعل؟ تسجيل الدخول</div>
+    </div>
+
+    <!-- الصفحة الرئيسية للوحة التحكم -->
+    <div id="mainPage" class="page">
+        <div class="main-header">
+            <div class="settings-gear" onclick="switchPage('mainPage', 'settingsPage')">⚙️</div>
+            <h2>مُتابع المالية </h2>
+        </div>
+
+        <div class="user-welcome" id="userWelcome">مرحباً بك</div>
+        
+        <div class="budget-alert-box" id="budgetAlert">⚠️ انتبه: لقد تخطيت 80% من حد المصاريف الشهري!</div>
+
+        <div class="total-box">
+            <label>الميزانية الحالية المتوفرة</label>
+            <span id="totalAmount">0 EGP</span>
+        </div>
+
+        <label>نوع العملية المالية</label>
+        <div class="type-selector">
+            <div id="incomeOpt" class="type-option income-box selected" onclick="selectType('income')">
+                <input type="radio" id="typeIncome" name="transactionType" value="income" checked>
+                <span>دخل 🟢</span>
+            </div>
+            <div id="expenseOpt" class="type-option expense-box" onclick="selectType('expense')">
+                <input type="radio" id="typeExpense" name="transactionType" value="expense">
+                <span>صرف 🔴</span>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label>المبلغ (EGP)</label>
+            <input type="number" id="amountInput" placeholder="مثال: 150">
+        </div>
+
+        <!-- القائمة المنسدلة الذكية الخاصة بفئات المصاريف (تظهر في وضع الصرف فقط) -->
+        <div class="input-group" id="categoryGroup" style="display: none;">
+            <label>فئة المصاريف 🏷️</label>
+            <select id="categoryInput">
+                <option value="طعام">طعام 🍔</option>
+                <option value="مواصلات">مواصلات 🚗</option>
+                <option value="دراسة">دراسة 📚</option>
+                <option value="ترفيه">ترفيه 🎮</option>
+                <option value="أخرى">أخرى ⚙️</option>
+            </select>
+        </div>
+        
+        <div class="input-group">
+            <label>اليوم</label>
+            <select id="dayInput">
+                <option value="السبت">السبت</option>
+                <option value="الأحد">الأحد</option>
+                <option value="الإثنين">الإثنين</option>
+                <option value="الثلاثاء">الثلاثاء</option>
+                <option value="الأربعاء">الأربعاء</option>
+                <option value="الخميس">الخميس</option>
+                <option value="الجمعة">الجمعة</option>
+            </select>
+        </div>
+
+        <div class="input-group">
+            <label>التاريخ</label>
+            <input type="date" id="dateInput">
+        </div>
+
+        <button id="submitBtn" onclick="addRecord()">حفظ العملية الحالية</button>
+        <button id="cancelEditBtn" class="secondary-btn" style="display:none; margin-top:8px;" onclick="cancelEditMode()">إلغاء التعديل</button>
+
+        <div class="search-filter-bar">
+            <input type="text" id="searchInput" placeholder="🔍 ابحث بمبلغ أو يوم..." oninput="loadDashboard()">
+            <select id="filterSelect" onchange="loadDashboard()">
+                <option value="all">الكل 📊</option>
+                <option value="income">الدخل 🟢</option>
+                <option value="expense">الصرف 🔴</option>
+            </select>
+        </div>
+
+        <div class="history-container" id="historyContainer"></div>
+    </div>
+
+    <!-- صفحة الإعدادات الكاملة الجديدة عند الضغط على الترس -->
+    <div id="settingsPage" class="page">
+        <div class="main-header">
+            <h2>إعدادات التطبيق</h2>
+            <div class="back-arrow" onclick="switchPage('settingsPage', 'mainPage')" title="العودة">⬅️</div>
+        </div>
+        
+        <div class="settings-list">
+            <div class="settings-item game-item" onclick="switchPage('settingsPage', 'moreSitesPage')">
+                <span>🌐    مزيد من المواقع:    </span>
+            </div>
+            <div class="settings-item" onclick="openPopup('chartPopup')">
+                <span>📊 عرض التحليل المالي (الرسم البياني)</span>
+            </div>
+            <div class="settings-item" onclick="openPopup('budgetPopup')">
+                <span>🎯 ضبط الميزانية المستهدفة</span>
+            </div>
+            <div class="settings-item" onclick="exportToCSV()">
+                <span>📥 تحميل التقرير المالي (Excel)</span>
+            </div>
+            <div class="settings-item" onclick="exportBackupData()">
+                <span>🔐 حفظ نسخة احتياطية مشفرة</span>
+            </div>
+            <div class="settings-item" onclick="document.getElementById('importBackupFile').click()">
+                <span>📤 استعادة النسخة الاحتياطية</span>
+                <input type="file" id="importBackupFile" style="display: none;" accept=".json" onchange="importBackupData(event)">
+            </div>
+            <div class="settings-item" onclick="openPopup('contactPopup')">
+                <span>📬 تواصل مع المطور</span>
+            </div>
+            <div class="settings-item" onclick="logout()">
+                <span>🚪 تسجيل الخروج</span>
+            </div>
+            <div class="settings-item danger-item" onclick="deleteCurrentAccount()">
+                <span>⚠️ حذف الحساب</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- الصفحة الجديدة المنفصلة الخاصة بمزيد من المواقع -->
+    <div id="moreSitesPage" class="page">
+        <div class="main-header">
+            <h2>مزيد من المواقع</h2>
+            <div class="back-arrow" onclick="switchPage('moreSitesPage', 'settingsPage')" title="العودة للإعدادات">⬅️</div>
+        </div>
+        <div class="settings-list">
+            <!-- الموقع الأول -->
+            <a href="https://mustaroo198-oss.github.io/Jamp-Game-Pro-3/" target="_blank" class="settings-item game-item">
+                <span>🎮    العب الآن (انتقل للعبة JumpMaster)    </span>
+            </a>
+            
+            <!-- الموقع الثاني -->
+            <a href="https://mustaroo198-oss.github.io/Restaurant-System/" target="_blank" class="settings-item game-item">
+                <span>🍽️    سيستم مطعم (نسخة جاري تعديلها)    </span>
+            </a>
+
+            <!-- مكان فاضي 1 (ضع الرابط والاسم هنا) -->
+            <a href="https://mustaroo198-oss.github.io/The-Counter/" target="_blank" class="settings-item empty-slot">
+                <span>✨    السبحه اليدويه   </span>
+            </a>
+
+            <!-- مكان فاضي 2 (ضع الرابط والاسم هنا) -->
+            <a href="SITE_URL_2_HERE" target="_blank" class="settings-item empty-slot">
+                <span>✨    موقع جديد 2     </span>
+            </a>
+
+            <!-- مكان فاضي 3 (ضع الرابط والاسم هنا) -->
+            <a href="SITE_URL_3_HERE" target="_blank" class="settings-item empty-slot">
+                <span>✨    موقع جديد 3    </span>
+            </a>
+        </div>
+    </div>
+
+    <div class="popup-overlay" id="chartPopup" onclick="closePopup('chartPopup')">
+        <div class="popup-card" onclick="event.stopPropagation()">
+            <div class="close-popup" onclick="closePopup('chartPopup')">&times;</div>
+            <h3>التحليل المالي الحركي 📊</h3>
+            <p>نسبة توزيع الدخل الإجمالي مقابل المصاريف الحالية</p>
+            <div class="chart-container">
+                <canvas id="financeChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="popup-overlay" id="budgetPopup" onclick="closePopup('budgetPopup')">
+        <div class="popup-card" onclick="event.stopPropagation()">
+            <div class="close-popup" onclick="closePopup('budgetPopup')">&times;</div>
+            <h3>تحديد حد المصاريف الشهري 🎯</h3>
+            <p>سيقوم التطبيق بتنبيهك تلقائياً في الواجهة عند الاقتراب من تجاوز هذا الحد.</p>
+            <div class="input-group" style="text-align: right;">
+                <label>الميزانية المستهدفة للشهر (EGP)</label>
+                <input type="number" id="budgetLimitInput" placeholder="مثال: 3000">
+            </div>
+            <button onclick="saveBudgetLimitPopup()">حفظ وإغلاق الحجم</button>
+        </div>
+    </div>
+
+    <div class="popup-overlay" id="contactPopup" onclick="closePopup('contactPopup')">
+        <div class="popup-card" onclick="event.stopPropagation()">
+            <div class="close-popup" onclick="closePopup('contactPopup')">&times;</div>
+            <h3>تواصل مع المطور 💻</h3>
+            <p>يسعدني تلقي آرائك أو اقتراحاتك لتطوير التطبيق بشكل أفضل.</p>
+            <div class="contact-links">
+                <a href="https://wa.me/201013587867" target="_blank" class="contact-link-btn" style="color: #2ecc71;">واتساب 💬</a>
+                <a href="https://t.me/Omar Sheref" target="_blank" class="contact-link-btn" style="color: #3498db;">تليجرام ✈️</a>
+                <a href="https://fa.me/Omar Sheref" target="_blank" class="contact-link-btn" style="color: #1877f2;">فيسبوك 🔵</a>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        تم التطوير بواسطة <span>Omar Hadwa</span> &copy; 2026
+    </footer>
+
+    <script>
+        let currentUser = "";
+        let selectedTransactionType = "income";
+        let editModeIndex = null;
+        let financeChart = null;
+
+        document.getElementById('dateInput').valueAsDate = new Date();
+
+        function openPopup(id) { 
+            document.getElementById(id).classList.add('show'); 
+            if(id === 'chartPopup') loadDashboard();
+        }
+        function closePopup(id) { document.getElementById(id).classList.remove('show'); }
+
+        function switchPage(fromPageId, toPageId) {
+            const fromPage = document.getElementById(fromPageId);
+            const toPage = document.getElementById(toPageId);
+            fromPage.style.animation = "pageOut 0.3s ease-in forwards";
+            setTimeout(() => {
+                fromPage.classList.remove('active');
+                toPage.classList.add('active');
+                toPage.style.animation = "pageIn 0.5s var(--bezier-bounce) forwards";
+            }, 250);
+        }
+
+        function selectType(type) {
+            selectedTransactionType = type;
+            const incomeBox = document.getElementById('incomeOpt');
+            const expenseBox = document.getElementById('expenseOpt');
+            const categoryGroup = document.getElementById('categoryGroup');
+            
+            if (type === 'income') {
+                incomeBox.classList.add('selected'); expenseBox.classList.remove('selected');
+                document.getElementById('typeIncome').checked = true;
+                categoryGroup.style.display = "none";
+            } else {
+                expenseBox.classList.add('selected'); incomeBox.classList.remove('selected');
+                document.getElementById('typeExpense').checked = true;
+                categoryGroup.style.display = "block";
+            }
+        }
+
+        function showPasswordStep() {
+            const usernameInput = document.getElementById('loginUser').value.trim();
+            if (!usernameInput) { alert("برجاء إدخال اسم المستخدم أولاً!"); return; }
+            const userPart = document.getElementById('loginUserPart');
+            const passPart = document.getElementById('loginPassPart');
+            userPart.style.opacity = "0"; userPart.style.transform = "translateY(-10px)";
+            setTimeout(() => {
+                userPart.style.display = "none"; passPart.style.display = "block";
+                passPart.style.opacity = "0"; passPart.style.transform = "translateY(10px)";
+                setTimeout(() => { passPart.style.opacity = "1"; passPart.style.transform = "translateY(0)"; document.getElementById('loginPass').focus(); }, 20);
+            }, 250);
+        }
+
+        function goBackToUserStep() {
+            const userPart = document.getElementById('loginUserPart');
+            const passPart = document.getElementById('loginPassPart');
+            passPart.style.opacity = "0"; passPart.style.transform = "translateY(10px)";
+            setTimeout(() => {
+                passPart.style.display = "none"; userPart.style.display = "block";
+                userPart.style.opacity = "0"; userPart.style.transform = "translateY(-10px)";
+                setTimeout(() => { userPart.style.opacity = "1"; userPart.style.transform = "translateY(0)"; document.getElementById('loginUser').focus(); }, 20);
+            }, 250);
+        }
+
+        function handleUserEnter(e) { if (e.key === "Enter") showPasswordStep(); }
+        function handlePassEnter(e) { if (e.key === "Enter") login(); }
+        function resetLoginSteps() {
+            document.getElementById('loginUserPart').style.display = "block";
+            document.getElementById('loginPassPart').style.display = "none";
+            document.getElementById('loginUser').value = ""; document.getElementById('loginPass').value = "";
+        }
+        function goToRegister() { switchPage('loginPage', 'registerPage'); }
+
+        function register() {
+            const user = document.getElementById('regUser').value.trim();
+            const pass = document.getElementById('regPass').value.trim();
+            if (!user || !pass) { alert("برجاء ملء جميع الخانات!"); return; }
+            let users = JSON.parse(localStorage.getItem('appUsers')) || {};
+            if (users[user]) { alert("اسم المستخدم مسجل بالفعل!"); return; }
+            users[user] = pass;
+            localStorage.setItem('appUsers', JSON.stringify(users));
+            alert("تم إنشاء الحساب بنجاح!");
+            switchPage('registerPage', 'loginPage'); resetLoginSteps();
+        }
+
+        function login() {
+            const user = document.getElementById('loginUser').value.trim();
+            const pass = document.getElementById('loginPass').value.trim();
+            let users = JSON.parse(localStorage.getItem('appUsers')) || {};
+            if (users[user] && users[user] === pass) {
+                currentUser = user;
+                document.getElementById('userWelcome').innerText = `حساب المستخدم: ${currentUser}`;
+                
+                const savedLimit = localStorage.getItem(`budgetLimit_${currentUser}`) || "";
+                document.getElementById('budgetLimitInput').value = savedLimit;
+
+                switchPage('loginPage', 'mainPage');
+                cancelEditMode();
+                loadDashboard();
+            } else {
+                alert("بيانات الدخول غير صحيحة!");
+            }
+        }
+
+        function logout() { currentUser = ""; resetLoginSteps(); switchPage('settingsPage', 'loginPage'); switchPage('mainPage', 'loginPage'); switchPage('moreSitesPage', 'loginPage'); }
+
+        function saveBudgetLimitPopup() {
+            const val = document.getElementById('budgetLimitInput').value;
+            localStorage.setItem(`budgetLimit_${currentUser}`, val);
+            closePopup('budgetPopup');
+            loadDashboard();
+        }
+
+        function deleteCurrentAccount() {
+            if (confirm(`⚠️ هل أنت متأكد من حذف الحساب "${currentUser}" نهائياً؟`)) {
+                let users = JSON.parse(localStorage.getItem('appUsers')) || {};
+                delete users[currentUser];
+                localStorage.setItem('appUsers', JSON.stringify(users));
+
+                let allRecords = JSON.parse(localStorage.getItem('moneyRecords_multi')) || [];
+                let filteredRecords = allRecords.filter(r => r.username !== currentUser);
+                localStorage.setItem('moneyRecords_multi', JSON.stringify(filteredRecords));
+                localStorage.removeItem(`budgetLimit_${currentUser}`);
+
+                alert("تم حذف الحساب.");
+                logout();
+            }
+        }
+
+        function updateChart(totalIncome, totalExpense) {
+            const ctx = document.getElementById('financeChart').getContext('2d');
+            if (financeChart) { financeChart.destroy(); }
+
+            const hasData = totalIncome > 0 || totalExpense > 0;
+            financeChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: hasData ? ['إجمالي الدخل', 'إجمالي الصرف'] : ['لا توجد بيانات', ''],
+                    datasets: [{
+                        data: hasData ? [totalIncome, totalExpense] : [1, 0],
+                        backgroundColor: hasData ? ['#2ecc71', '#ff4d4d'] : ['#222222', '#222222'],
+                        borderWidth: 0, hoverOffset: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    animation: { animateScale: true, animateRotate: true, duration: 800, easing: 'easeOutQuart' },
+                    plugins: { legend: { display: true, labels: { color: '#fff' } } }, cutout: '70%'
+                }
+            });
+        }
+
+        // دالة إضافة وحفظ العملية المالية بالكامل
+        function addRecord() {
+            const amount = document.getElementById('amountInput').value.trim();
+            const category = document.getElementById('categoryInput').value;
+            const day = document.getElementById('dayInput').value;
+            const date = document.getElementById('dateInput').value;
+
+            if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
+                alert("برجاء إدخال مبلغ صحيح أكبر من الصفر!");
+                return;
+            }
+            if (!date) {
+                alert("برجاء اختيار التاريخ!");
+                return;
+            }
+
+            let allRecords = JSON.parse(localStorage.getItem('moneyRecords_multi')) || [];
+
+            if (editModeIndex !== null) {
+                // وضع التعديل
+                let userRecords = allRecords.filter(r => r.username === currentUser);
+                let recordToUpdate = userRecords[editModeIndex];
+                
+                recordToUpdate.amount = amount;
+                recordToUpdate.type = selectedTransactionType;
+                recordToUpdate.category = selectedTransactionType === 'expense' ? category : 'دخل';
+                recordToUpdate.day = day;
+                recordToUpdate.date = date;
+
+                editModeIndex = null;
+                document.getElementById('submitBtn').innerText = "حفظ العملية الحالية";
+                document.getElementById('cancelEditBtn').style.display = "none";
+            } else {
+                // إضافة جديدة
+                const newRecord = {
+                    username: currentUser,
+                    amount: amount,
+                    type: selectedTransactionType,
+                    category: selectedTransactionType === 'expense' ? category : 'دخل',
+                    day: day,
+                    date: date
+                };
+                allRecords.push(newRecord);
+            }
+
+            localStorage.setItem('moneyRecords_multi', JSON.stringify(allRecords));
+            document.getElementById('amountInput').value = "";
+            loadDashboard();
+        }
+
+        function cancelEditMode() {
+            editModeIndex = null;
+            document.getElementById('submitBtn').innerText = "حفظ العملية الحالية";
+            document.getElementById('cancelEditBtn').style.display = "none";
+            document.getElementById('amountInput').value = "";
+        }
+
+        function editRecord(index) {
+            let allRecords = JSON.parse(localStorage.getItem('moneyRecords_multi')) || [];
+            let userRecords = allRecords.filter(r => r.username === currentUser);
+            let target = userRecords[index];
+
+            if (target) {
+                editModeIndex = index;
+                document.getElementById('amountInput').value = target.amount;
+                selectType(target.type);
+                if (target.type === 'expense') {
+                    document.getElementById('categoryInput').value = target.category || 'طعام';
+                }
+                document.getElementById('dayInput').value = target.day;
+                document.getElementById('dateInput').value = target.date;
+
+                document.getElementById('submitBtn').innerText = "تحديث العملية ✏️";
+                document.getElementById('cancelEditBtn').style.display = "block";
+            }
+        }
+
+        function deleteRecord(index) {
+            if (confirm("هل أنت متأكد من حذف هذه العملية؟")) {
+                let allRecords = JSON.parse(localStorage.getItem('moneyRecords_multi')) || [];
+                let userRecords = allRecords.filter(r => r.username === currentUser);
+                let recordToDelete = userRecords[index];
+
+                if (recordToDelete) {
+                    let realIndex = allRecords.findIndex(r => 
+                        r.username === currentUser && 
+                        r.amount === recordToDelete.amount && 
+                        r.date === recordToDelete.date && 
+                        r.day === recordToDelete.day &&
+                        r.type === recordToDelete.type
+                    );
+
+                    if (realIndex !== -1) {
+                        allRecords.splice(realIndex, 1);
+                        localStorage.setItem('moneyRecords_multi', JSON.stringify(allRecords));
+                        loadDashboard();
+                    }
+                }
+            }
+        }
+
+        function loadDashboard() {
+            let allRecords = JSON.parse(localStorage.getItem('moneyRecords_multi')) || [];
+            let userRecords = allRecords.filter(r => r.username === currentUser);
+
+            const searchVal = document.getElementById('searchInput').value.trim().toLowerCase();
+            const filterVal = document.getElementById('filterSelect').value;
+
+            let totalIncome = 0;
+            let totalExpense = 0;
+
+            userRecords.forEach(r => {
+                let amt = parseFloat(r.amount) || 0;
+                if (r.type === 'income') totalIncome += amt;
+                else totalExpense += amt;
+            });
+
+            let currentBalance = totalIncome - totalExpense;
+            document.getElementById('totalAmount').innerText = `${currentBalance} EGP`;
+
+            // الميزانية المستهدفة والتنبيه
+            const savedLimit = parseFloat(localStorage.getItem(`budgetLimit_${currentUser}`)) || 0;
+            const alertBox = document.getElementById('budgetAlert');
+            if (savedLimit > 0 && totalExpense >= (savedLimit * 0.8)) {
+                alertBox.style.display = "block";
+            } else {
+                alertBox.style.display = "none";
+            }
+
+            updateChart(totalIncome, totalExpense);
+
+            // تصفية السجلات للبحث والفلترة
+            let filtered = userRecords.filter(r => {
+                let matchesSearch = r.amount.toString().includes(searchVal) || r.day.toLowerCase().includes(searchVal) || (r.category && r.category.toLowerCase().includes(searchVal));
+                let matchesType = filterVal === 'all' ? true : r.type === filterVal;
+                return matchesSearch && matchesType;
+            });
+
+            const historyContainer = document.getElementById('historyContainer');
+            historyContainer.innerHTML = "";
+
+            if (filtered.length === 0) {
+                historyContainer.innerHTML = `<div style="text-align:center; color: var(--text-muted); margin-top:20px; font-size:14px;">لا توجد عمليات مسجلة</div>`;
+                return;
+            }
+
+            filtered.reverse().forEach((record, idx) => {
+                let realIndexInUserRecords = userRecords.indexOf(record);
+                let isIncome = record.type === 'income';
+                let itemClass = isIncome ? 'income-item' : 'expense-item';
+                let amountClass = isIncome ? 'income-amount' : 'expense-amount';
+                let typeSign = isIncome ? '+' : '-';
+                let catBadge = (!isIncome && record.category) ? `<span class="record-category-badge">${record.category}</span>` : '';
+
+                let html = `
+                    <div class="record-item ${itemClass}">
+                        <div class="record-info">
+                            <div>${catBadge} <strong>${record.day}</strong></div>
+                            <div class="record-date">${record.date}</div>
+                        </div>
+                        <div class="record-amount ${amountClass}">
+                            <span>${typeSign}${record.amount} EGP</span>
+                            <div class="action-btns">
+                                <button class="icon-btn" onclick="editRecord(${realIndexInUserRecords})" title="تعديل">✏️</button>
+                                <button class="icon-btn" onclick="deleteRecord(${realIndexInUserRecords})" title="حذف">🗑️</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                historyContainer.innerHTML += html;
+            });
+        }
+
+        function exportToCSV() {
+            let allRecords = JSON.parse(localStorage.getItem('moneyRecords_multi')) || [];
+            let userRecords = allRecords.filter(r => r.username === currentUser);
+            
+            if (userRecords.length === 0) { alert("لا توجد بيانات للتصدير!"); return; }
+
+            let csvContent = "\uFEFFالنوع,المبلغ,الفئة,اليوم,التاريخ\n";
+            userRecords.forEach(r => {
+                let typeStr = r.type === 'income' ? 'دخل' : 'صرف';
+                let catStr = r.category || '-';
+                csvContent += `${typeStr},${r.amount},${catStr},${r.day},${r.date}\n`;
+            });
+
+            let blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            let url = URL.createObjectURL(blob);
+            let link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `تقرير_مالي_${currentUser}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function exportBackupData() {
+            let allRecords = JSON.parse(localStorage.getItem('moneyRecords_multi')) || [];
+            let userRecords = allRecords.filter(r => r.username === currentUser);
+            let limit = localStorage.getItem(`budgetLimit_${currentUser}`) || "";
+
+            let dataObj = {
+                user: currentUser,
+                records: userRecords,
+                budgetLimit: limit,
+                exportDate: new Date().toISOString()
+            };
+
+            let dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dataObj, null, 2));
+            let downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `نسخة_احتياطية_${currentUser}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        function importBackupData(event) {
+            const fileReader = new FileReader();
+            fileReader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    if (importedData && importedData.records) {
+                        let allRecords = JSON.parse(localStorage.getItem('moneyRecords_multi')) || [];
+                        
+                        // إزالة سجلات المستخدم القديمة واستبدالها بالجديدة
+                        allRecords = allRecords.filter(r => r.username !== currentUser);
+                        
+                        importedData.records.forEach(r => {
+                            r.username = currentUser; // ضمان التبعية للمستخدم الحالي
+                            allRecords.push(r);
+                        });
+
+                        localStorage.setItem('moneyRecords_multi', JSON.stringify(allRecords));
+
+                        if (importedData.budgetLimit) {
+                            localStorage.setItem(`budgetLimit_${currentUser}`, importedData.budgetLimit);
+                            document.getElementById('budgetLimitInput').value = importedData.budgetLimit;
+                        }
+
+                        alert("تمت استعادة النسخة الاحتياطية بنجاح!");
+                        loadDashboard();
+                    } else {
+                        alert("ملف النسخة الاحتياطية غير صالح!");
+                    }
+                } catch (err) {
+                    alert("حدث خطأ أثناء قراءة الملف!");
+                }
+            };
+            fileReader.readAsText(event.target.files[0]);
+        }
+    </script>
+</body>
+</html>
